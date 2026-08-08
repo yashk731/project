@@ -94,17 +94,27 @@ function NodeCard({ node, onToggle, collapsed, depth }: { node: TreeNode; onTogg
       {/* Children */}
       {hasChildren && !isCollapsed && (
         <>
-          {/* Vertical line down */}
+          {/* Vertical line down from parent */}
           <div className="w-px h-6 bg-gray-200"></div>
-          {/* Children row */}
-          <div className="flex items-start gap-6 relative">
-            {/* Horizontal connector */}
-            {node.children.length > 1 && (
-              <div className="absolute top-0 left-0 right-0 h-px bg-gray-200" style={{ left: '50%', right: '50%', width: 'auto' }}></div>
-            )}
+          {/* Children row — each child gets equal width so the parent stays centered */}
+          <div className="flex items-start">
             {node.children.map((child, idx) => (
-              <div key={child.id} className="flex flex-col items-center relative">
-                {/* Connector to child */}
+              <div
+                key={child.id}
+                className="flex flex-col items-center relative"
+                style={{ flex: '1 1 0%', minWidth: '180px' }}
+              >
+                {/* Horizontal connector for multiple children */}
+                {node.children.length > 1 && (
+                  <div
+                    className="absolute top-0 h-px bg-gray-200"
+                    style={{
+                      left: idx === 0 ? '50%' : 0,
+                      right: idx === node.children.length - 1 ? '50%' : 0,
+                    }}
+                  />
+                )}
+                {/* Vertical connector to child */}
                 <div className="w-px h-6 bg-gray-200"></div>
                 <NodeCard node={child} onToggle={onToggle} collapsed={collapsed} depth={depth + 1} />
               </div>
