@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useAdmin } from '../AdminContext';
 import type { ModuleItem, ModuleContentItem, AccordionItem, ModuleContentType } from '../../types';
+import { fileToBase64 } from '../../utils/imageUpload';
 
 const ICON_OPTIONS = [
   'Link2', 'Users', 'Phone', 'Calendar', 'ShieldCheck', 'FileText', 'GitBranch', 'Layers',
@@ -37,6 +38,7 @@ export default function AdminModules() {
   const [contentForm, setContentForm] = useState<Omit<ModuleContentItem, 'id'>>(EMPTY_CONTENT);
   const [editingContentId, setEditingContentId] = useState<string | null>(null);
   const [deleteContentId, setDeleteContentId] = useState<string | null>(null);
+  const [uploadingPdf, setUploadingPdf] = useState(false);
 
   const openAdd = () => {
     setForm(EMPTY_MODULE);
@@ -142,6 +144,23 @@ export default function AdminModules() {
       ...prev,
       accordionItems: (prev.accordionItems || []).filter(a => a.id !== id),
     }));
+  };
+
+  const handlePdfUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.type !== 'application/pdf') {
+      alert('Please select a PDF file.');
+      return;
+    }
+    setUploadingPdf(true);
+    try {
+      const base64 = await fileToBase64(file);
+      setContentForm(prev => ({ ...prev, pdfUrl: base64 }));
+    } catch {
+      // ignore read errors
+    }
+    setUploadingPdf(false);
   };
 
   const handleTypeChange = (type: ModuleContentType) => {
@@ -349,9 +368,61 @@ export default function AdminModules() {
                     {/* PDF editor */}
                     {contentForm.type === 'pdf' && (
                       <div className="mb-3">
-                        <label className="form-label fw-semibold" style={{ fontSize: '0.85rem' }}>PDF URL</label>
-                        <input type="url" className="form-control" value={contentForm.pdfUrl || ''} onChange={e => setContentForm(prev => ({ ...prev, pdfUrl: e.target.value }))} placeholder="https://example.com/document.pdf" />
-                        <p className="text-muted mt-1" style={{ fontSize: '0.75rem' }}>Paste a direct link to a PDF file. It will open in a viewer when clicked.</p>
+                        <label className="form-label fw-semibold" style={{ fontSize: '0.85rem' }}>PDF Source</label>
+
+                        {/* Toggle between URL and Upload */}
+                        <div className="btn-group w-100 mb-3" role="group">
+                          <button
+                            type="button"
+                            className={`btn btn-sm ${contentForm.pdfUrl && !contentForm.pdfUrl.startsWith('data:') ? 'btn-aon-red' : 'btn-outline-secondary'}`}
+                            onClick={() => setContentForm(prev => ({ ...prev, pdfUrl: '' }))}
+                          >
+                            <i className="bi bi-link-45deg me-1"></i>Enter URL
+                          </button>
+                          <button
+                            type="button"
+                            className={`btn btn-sm ${contentForm.pdfUrl && contentForm.pdfUrl.startsWith('data:') ? 'btn-aon-red' : 'btn-outline-secondary'}`}
+                            onClick={() => setContentForm(prev => ({ ...prev, pdfUrl: '' }))}
+                          >
+                            <i className="bi bi-cloud-arrow-up me-1"></i>Upload from Device
+                          </button>
+                        </div>
+
+                        {/* URL input */}
+                        {!(contentForm.pdfUrl && contentForm.pdfUrl.startsWith('data:')) && (
+                          <>
+                            <input type="url" className="form-control" value={contentForm.pdfUrl || ''} onChange={e => setContentForm(prev => ({ ...prev, pdfUrl: e.target.value }))} placeholder="https://example.com/document.pdf" />
+                            <p className="text-muted mt-1" style={{ fontSize: '0.75rem' }}>Paste a direct link to a PDF file. It will open in a viewer when clicked.</p>
+                          </>
+                        )}
+
+                        {/* Upload from device */}
+                        {(contentForm.pdfUrl && contentForm.pdfUrl.startsWith('data:')) ? (
+                          <div className="border rounded-3 p-3" style={{ background: '#f8f9fa' }}>
+                            <div className="d-flex align-items-center gap-3">
+                              <i className="bi bi-file-earmark-pdf-fill text-danger" style={{ fontSize: '2rem' }}></i>
+                              <div className="flex-grow-1">
+                                <p className="fw-semibold mb-0 text-dark" style={{ fontSize: '0.85rem' }}>PDF uploaded successfully</p>
+                                <p className="text-muted mb-0" style={{ fontSize: '0.75rem' }}>File is ready to display</p>
+                              </div>
+                              <button type="button" className="btn btn-sm btn-outline-danger" onClick={() => setContentForm(prev => ({ ...prev, pdfUrl: '' }))}>
+                                <i className="bi bi-x-circle me-1"></i>Remove
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          !(contentForm.pdfUrl) && (
+                            <>
+                              <label className="d-flex flex-column align-items-center justify-content-center border border-2 border-dashed rounded-3 py-4 px-3" style={{ cursor: 'pointer', borderColor: '#dee2e6' }}>
+                                <i className="bi bi-cloud-arrow-up text-muted" style={{ fontSize: '2rem' }}></i>
+                                <span className="text-muted mt-2" style={{ fontSize: '0.85rem' }}>Click to upload a PDF</span>
+                                <span className="text-muted" style={{ fontSize: '0.75rem' }}>PDF files only, up to 5MB</span>
+                                <input type="file" accept="application/pdf" className="d-none" onChange={handlePdfUpload} />
+                              </label>
+                              {uploadingPdf && <p className="text-muted mt-2" style={{ fontSize: '0.75rem' }}><span className="spinner-border spinner-border-sm me-1"></span>Uploading...</p>}
+                            </>
+                          )
+                        )}
                       </div>
                     )}
 

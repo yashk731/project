@@ -172,7 +172,15 @@ function getLocalData(): SiteData {
   const raw = localStorage.getItem(STORAGE_KEY);
   if (raw) {
     try {
-      return JSON.parse(raw);
+      const parsed = JSON.parse(raw);
+      return {
+        teamMembers: parsed.teamMembers ?? [],
+        modules: parsed.modules ?? [],
+        gallery: parsed.gallery ?? [],
+        config: parsed.config ?? { tools: [], checklist: [] },
+        galleryCategories: parsed.galleryCategories ?? ['All'],
+        orgChart: parsed.orgChart ?? [],
+      };
     } catch {
       // fall through to default
     }
@@ -194,8 +202,17 @@ export async function fetchData(): Promise<SiteData> {
       if (!res.ok) throw new Error('Network response not ok');
       const json = await res.json();
       if (json.success && json.data) {
-        saveLocalData(json.data);
-        return json.data as SiteData;
+        const d = json.data as Partial<SiteData>;
+        const merged: SiteData = {
+          teamMembers: d.teamMembers ?? [],
+          modules: d.modules ?? [],
+          gallery: d.gallery ?? [],
+          config: d.config ?? { tools: [], checklist: [] },
+          galleryCategories: d.galleryCategories ?? ['All'],
+          orgChart: d.orgChart ?? [],
+        };
+        saveLocalData(merged);
+        return merged;
       }
       throw new Error(json.error || 'Unknown error');
     } catch (err) {
