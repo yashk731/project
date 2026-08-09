@@ -4,6 +4,8 @@ const STORAGE_KEY = 'gcc_site_data';
 const SHEETS_ENDPOINT_KEY = 'gcc_sheets_endpoint';
 const ADMIN_AUTH_KEY = 'gcc_admin_auth';
 
+const DEFAULT_ENDPOINT = 'https://script.google.com/macros/s/AKfycbzN23Jp5rvvHri90RvF-v6NdGjFkI_g3kfUQVf7Ob6CiEAZJ2g6ILxbXgd21m6LFu-V/exec';
+
 // Default data used as fallback when Google Sheets is not configured
 const DEFAULT_DATA: SiteData = {
   teamMembers: [
@@ -137,7 +139,7 @@ const ADMIN_USERNAME = 'admin';
 const ADMIN_PASSWORD = 'admin123';
 
 function getEndpoint(): string | null {
-  return localStorage.getItem(SHEETS_ENDPOINT_KEY);
+  return localStorage.getItem(SHEETS_ENDPOINT_KEY) || DEFAULT_ENDPOINT;
 }
 
 export function setEndpoint(url: string) {
@@ -145,7 +147,7 @@ export function setEndpoint(url: string) {
 }
 
 export function getEndpointValue(): string {
-  return localStorage.getItem(SHEETS_ENDPOINT_KEY) || '';
+  return localStorage.getItem(SHEETS_ENDPOINT_KEY) || DEFAULT_ENDPOINT;
 }
 
 export function clearEndpoint() {
