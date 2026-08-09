@@ -63,12 +63,15 @@ export function AdminProvider({ children }: { children: ReactNode }) {
   const persist = useCallback(async (newData: SiteData) => {
     setSaving(true);
     setSyncError(null);
-    const result = await saveData(newData);
-    if (result.error) {
-      setSyncError(result.error);
-      showToast(result.error, 'info');
+    try {
+      const result = await saveData(newData);
+      if (result.error) {
+        setSyncError(result.error);
+        showToast(result.error, 'info');
+      }
+    } finally {
+      setSaving(false);
     }
-    setSaving(false);
   }, [showToast]);
 
   const refresh = useCallback(async () => {

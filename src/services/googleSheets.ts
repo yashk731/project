@@ -198,7 +198,10 @@ export async function fetchData(): Promise<SiteData> {
   const endpoint = getEndpoint();
   if (endpoint) {
     try {
-      const res = await fetch(`${endpoint}?action=read`);
+      const controller = new AbortController();
+      const timeoutId = window.setTimeout(() => controller.abort(), 15000);
+      const res = await fetch(`${endpoint}?action=read`, { signal: controller.signal });
+      window.clearTimeout(timeoutId);
       if (!res.ok) throw new Error('Network response not ok');
       const json = await res.json();
       if (json.success && json.data) {
@@ -226,23 +229,26 @@ export async function fetchData(): Promise<SiteData> {
 export async function saveData(data: SiteData): Promise<{ success: boolean; error?: string }> {
   saveLocalData(data);
   const endpoint = getEndpoint();
-  if (endpoint) {
-    try {
-      const res = await fetch(endpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify({ action: 'write', data }),
-      });
-      const json = await res.json();
-      if (!json.success) {
-        return { success: true, error: 'Saved locally but Google Sheets sync failed' };
-      }
-      return { success: true };
-    } catch (err) {
+  if (!endpoint) return { success: true };
+
+  try {
+    const controller = new AbortController();
+    const timeoutId = window.setTimeout(() => controller.abort(), 15000);
+    const res = await fetch(endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ action: 'write', data }),
+      signal: controller.signal,
+    });
+    window.clearTimeout(timeoutId);
+    const json = await res.json() as { success?: boolean };
+    if (!res.ok || !json.success) {
       return { success: true, error: 'Saved locally but Google Sheets sync failed' };
     }
+    return { success: true };
+  } catch {
+    return { success: true, error: 'Saved locally but Google Sheets sync failed' };
   }
-  return { success: true };
 }
 
 export { DEFAULT_DATA };
