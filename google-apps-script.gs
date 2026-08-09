@@ -13,8 +13,8 @@
  * 7. Paste the URL into the Admin Settings page
  */
 
-// Change this to your Google Sheet ID (from the URL: docs.google.com/spreadsheets/d/THIS_PART/edit)
-var SHEET_ID = '1pgBdTSpIpQ2MbA71AniGJN0DJGZAuRT9u7h3F87UDvU';
+// Your Google Sheet ID (from the URL: docs.google.com/spreadsheets/d/THIS_PART/edit)
+var SHEET_ID = '10dSjik_VyOgz0x9QPdAtuw78ueWP0LAR0cO1RFpFQjc';
 var DATA_SHEET = 'SiteData';
 
 function doGet(e) {

@@ -10,6 +10,8 @@ export default function AdminSettings() {
   const [newChecklist, setNewChecklist] = useState('');
   const [endpoint, setEndpointUrl] = useState('');
   const [savedMsg, setSavedMsg] = useState(false);
+  const [testing, setTesting] = useState(false);
+  const [testResult, setTestResult] = useState<{ type: 'success' | 'error' | null; message: string }>({ type: null, message: '' });
 
   useEffect(() => {
     setTools(data.config.tools);
@@ -52,6 +54,29 @@ export default function AdminSettings() {
   const clearSheetConnection = () => {
     clearEndpoint();
     setEndpointUrl('');
+    setTestResult({ type: null, message: '' });
+  };
+
+  const testConnection = async () => {
+    if (!endpoint.trim()) {
+      setTestResult({ type: 'error', message: 'Please enter a Web App URL first.' });
+      return;
+    }
+    setTesting(true);
+    setTestResult({ type: null, message: '' });
+    try {
+      const res = await fetch(`${endpoint.trim()}?action=read`, { redirect: 'follow' });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const json = await res.json();
+      if (json.success) {
+        setTestResult({ type: 'success', message: 'Connection successful! Your Google Sheet is reachable and responding with data.' });
+      } else {
+        setTestResult({ type: 'error', message: `The script responded but returned an error: ${json.error || 'Unknown error'}` });
+      }
+    } catch (err) {
+      setTestResult({ type: 'error', message: `Could not reach the Apps Script URL. Make sure you deployed it as a Web App with access set to "Anyone". (${err instanceof Error ? err.message : 'Network error'})` });
+    }
+    setTesting(false);
   };
 
   return (
@@ -162,7 +187,7 @@ export default function AdminSettings() {
                 Connect a Google Sheet as your database. Deploy the provided Apps Script (see instructions below) and paste the Web App URL here.
               </p>
 
-              <div className="d-flex gap-2 mb-3">
+              <div className="d-flex gap-2 mb-3 flex-wrap">
                 <input
                   type="url"
                   className="form-control"
@@ -173,12 +198,23 @@ export default function AdminSettings() {
                 <button className="btn btn-aon-red" onClick={saveEndpoint} type="button">
                   <i className="bi bi-link-45deg me-1"></i>Connect
                 </button>
+                <button className="btn btn-outline-primary" onClick={testConnection} type="button" disabled={testing}>
+                  {testing ? <span className="spinner-border spinner-border-sm me-1"></span> : <i className="bi bi-wifi me-1"></i>}
+                  Test
+                </button>
                 {getEndpointValue() && (
                   <button className="btn btn-outline-danger" onClick={clearSheetConnection} type="button">
                     <i className="bi bi-x-circle me-1"></i>Disconnect
                   </button>
                 )}
               </div>
+
+              {testResult.type && (
+                <div className={`alert d-flex align-items-start gap-2 py-2 mb-3 ${testResult.type === 'success' ? 'alert-success' : 'alert-danger'}`} style={{ fontSize: '0.85rem' }}>
+                  <i className={`bi ${testResult.type === 'success' ? 'bi-check-circle-fill' : 'bi-exclamation-triangle-fill'} mt-1`}></i>
+                  <span>{testResult.message}</span>
+                </div>
+              )}
 
               {getEndpointValue() ? (
                 <div className="alert alert-success d-flex align-items-center gap-2 py-2" style={{ fontSize: '0.85rem' }}>
@@ -197,14 +233,17 @@ export default function AdminSettings() {
                 <h6 className="fw-bold mb-2" style={{ fontSize: '0.9rem' }}>
                   <i className="bi bi-book me-2"></i>How to connect Google Sheets
                 </h6>
+                <p className="text-muted mb-2" style={{ fontSize: '0.8rem' }}>
+                  Your sheet is already linked in the script. Follow these steps to deploy it:
+                </p>
                 <ol className="text-muted ps-3" style={{ fontSize: '0.8rem', lineHeight: 1.6 }}>
-                  <li>Create a new <a href="https://sheets.google.com" target="_blank" rel="noopener noreferrer" className="text-aon-red">Google Sheet</a></li>
-                  <li>In the sheet, click <strong>Extensions → Apps Script</strong></li>
-                  <li>Delete any code and paste the Apps Script code (see <code>google-apps-script.gs</code> in your project files)</li>
+                  <li>Open your <a href="https://docs.google.com/spreadsheets/d/10dSjik_VyOgz0x9QPdAtuw78ueWP0LAR0cO1RFpFQjc/edit" target="_blank" rel="noopener noreferrer" className="text-aon-red">Google Sheet</a></li>
+                  <li>Click <strong>Extensions → Apps Script</strong></li>
+                  <li>Delete any code there and paste the contents of <code>google-apps-script.gs</code> from your project files</li>
                   <li>Click <strong>Deploy → New deployment</strong>, choose <strong>Web app</strong></li>
                   <li>Set <strong>Execute as: Me</strong>, <strong>Who has access: Anyone</strong></li>
                   <li>Click <strong>Deploy</strong>, authorize the permissions, and copy the Web App URL</li>
-                  <li>Paste the URL above and click <strong>Connect</strong></li>
+                  <li>Paste the URL above, click <strong>Connect</strong>, then click <strong>Test</strong> to verify</li>
                 </ol>
               </div>
             </div>
